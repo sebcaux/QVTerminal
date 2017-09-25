@@ -1,4 +1,6 @@
 
+INCLUDEPATH += $$PWD
+
 SOURCES += \
     $$PWD/qvterminal.cpp \
     $$PWD/qvtline.cpp \

@@ -15,8 +15,6 @@ QVTerminal::QVTerminal(QWidget *parent)
     _crlf = false;
     _state = QVTerminal::Text;
 
-    //setViewportMargins(2, 2, 2, 2);
-
     QVTCharFormat format;
     QFont font;
     font.setFamily("monospace");
@@ -49,7 +47,7 @@ void QVTerminal::appendData(QByteArray data)
 {
     QByteArray text;
 
-    qDebug()<<data;
+    qDebug()<<"appendData"<<data;
 
     setUpdatesEnabled(false);
     QByteArray::const_iterator it = data.cbegin();
@@ -131,6 +129,7 @@ void QVTerminal::appendData(QByteArray data)
         }
         it++;
     }
+    appendString(text);
 
     verticalScrollBar()->setRange(0, _ch * (_data.size() + 1) - viewport()->size().height() + 6);
     verticalScrollBar()->setValue(verticalScrollBar()->maximum());
