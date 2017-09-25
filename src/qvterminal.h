@@ -2,6 +2,7 @@
 #define QVTERMINAL_H
 
 #include <QAbstractScrollArea>
+#include <QAction>
 
 #include "qvtline.h"
 
@@ -28,10 +29,13 @@ public:
 signals:
 
 public slots:
-    void appendData(QByteArray data);
+    void writeData(QByteArray data);
+
+    void paste();
 
 protected slots:
     void read();
+    void appendData(QByteArray data);
     void appendString(QString str);
 
 private:
@@ -66,11 +70,17 @@ protected:
     virtual void keyPressEvent(QKeyEvent *event);
     virtual void paintEvent(QPaintEvent *event);
     virtual void resizeEvent(QResizeEvent *event);
+    virtual void mousePressEvent(QMouseEvent* event);
+#ifndef QT_NO_CONTEXTMENU
+    virtual void contextMenuEvent(QContextMenuEvent *event);
+#endif // QT_NO_CONTEXTMENU
 
     // QAbstractScrollArea interface
 protected:
     virtual bool viewportEvent(QEvent *event);
     QColor vt100color(char c);
+
+    QAction *_pasteAction;
 };
 
 #endif // QVTERMINAL_H

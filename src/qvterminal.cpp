@@ -3,7 +3,10 @@
 #include <QKeyEvent>
 #include <QPainter>
 #include <QScrollBar>
+#include <QApplication>
+#include <QClipboard>
 #include <QDebug>
+#include <QMenu>
 
 QVTerminal::QVTerminal(QWidget *parent)
     : QAbstractScrollArea(parent)
@@ -26,6 +29,11 @@ QVTerminal::QVTerminal(QWidget *parent)
     setFormat(format);
 
     _data.append(QVTLine());
+
+    _pasteAction = new QAction("Paste");
+    _pasteAction->setShortcut(QKeySequence("Ctrl+V"));
+    connect(_pasteAction, &QAction::triggered, this, &QVTerminal::paste);
+    addAction(_pasteAction);
 }
 
 QVTerminal::~QVTerminal()
@@ -47,7 +55,7 @@ void QVTerminal::appendData(QByteArray data)
 {
     QByteArray text;
 
-    qDebug()<<"appendData"<<data;
+    //qDebug()<<"appendData"<<data;
 
     setUpdatesEnabled(false);
     QByteArray::const_iterator it = data.cbegin();
@@ -138,6 +146,13 @@ void QVTerminal::appendData(QByteArray data)
     update();
 }
 
+void QVTerminal::paste()
+{
+    QByteArray data;
+    data.append(QApplication::clipboard()->text());
+    writeData(data);
+}
+
 QColor QVTerminal::vt100color(char c)
 {
     switch (c)
@@ -187,6 +202,13 @@ bool QVTerminal::crlf() const
 void QVTerminal::setCrlf(bool crlf)
 {
     _crlf = crlf;
+}
+
+void QVTerminal::writeData(QByteArray data)
+{
+    _device->write(data);
+    if (_echo)
+        appendData(data);
 }
 
 bool QVTerminal::echo() const
@@ -269,15 +291,13 @@ void QVTerminal::keyPressEvent(QKeyEvent *event)
                 if (_echo)
                 {
                     data.append("\n");
-                    appendData(data);
+                    writeData(data);
                 }
             }
             else
             {
                 data.append(text);
-                _device->write(data);
-                if (_echo)
-                    appendData(data);
+                writeData(data);
             }
         }
     }
@@ -323,6 +343,30 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
     verticalScrollBar()->setSingleStep(_ch);
     verticalScrollBar()->setRange(0, _ch * (_data.size()+1) - viewport()->size().height() + 6);
 }
+
+void QVTerminal::mousePressEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::MidButton )
+    {
+        if( QApplication::clipboard()->supportsSelection())
+        {
+            QByteArray data;
+            data.append(QApplication::clipboard()->text(QClipboard::Selection));
+            writeData(data);
+        }
+    }
+    QWidget::mousePressEvent(event);
+}
+
+#ifndef QT_NO_CONTEXTMENU
+void QVTerminal::contextMenuEvent(QContextMenuEvent *event)
+{
+    QMenu menu(this);
+    menu.addAction(_pasteAction);
+    _pasteAction->setEnabled(!QApplication::clipboard()->text().isEmpty());
+    menu.exec(event->globalPos());
+}
+#endif // QT_NO_CONTEXTMENU
 
 bool QVTerminal::viewportEvent(QEvent *event)
 {
