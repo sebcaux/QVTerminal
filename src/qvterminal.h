@@ -38,6 +38,7 @@ protected slots:
     void read();
     void appendData(QByteArray data);
     void appendString(QString str);
+    void toggleCursor();
 
 private:
     QIODevice *_device;
@@ -71,7 +72,7 @@ private:
     // QWidget interface
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *paintEvent);
+    virtual void paintEvent(QPaintEvent *event);
     virtual void resizeEvent(QResizeEvent *event);
     virtual void mousePressEvent(QMouseEvent* event);
 #ifndef QT_NO_CONTEXTMENU

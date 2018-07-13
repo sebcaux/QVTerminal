@@ -11,9 +11,13 @@
 QVTerminal::QVTerminal(QWidget *parent)
     : QAbstractScrollArea(parent)
 {
+    _device = Q_NULLPTR;
+
     _cursorPos.setX(0);
     _cursorPos.setY(0);
     _cursorTimer.start(500);
+    _cvisible = true;
+    connect(&_cursorTimer, &QTimer::timeout, this, &QVTerminal::toggleCursor);
 
     _echo = false;
     _crlf = false;
@@ -193,6 +197,12 @@ void QVTerminal::appendString(QString str)
     }
 }
 
+void QVTerminal::toggleCursor()
+{
+    _cvisible = !_cvisible;
+    viewport()->update();
+}
+
 bool QVTerminal::crlf() const
 {
     return _crlf;
@@ -335,6 +345,9 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
             p.drawRect(QRect(pos, QSize(_cw, -_ch)));
         }
     }
+
+    if (_cvisible)
+        p.fillRect(QRect((_cursorPos.x() + 1) * _cw + 3, _cursorPos.y() * _ch + 3 + firstLine, _cw, _ch), QColor(187, 187, 187));
 }
 
 void QVTerminal::resizeEvent(QResizeEvent *event)
