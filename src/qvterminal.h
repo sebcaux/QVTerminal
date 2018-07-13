@@ -3,8 +3,9 @@
 
 #include <QAbstractScrollArea>
 #include <QAction>
+#include <QTimer>
 
-#include "qvtline.h"
+#include "qvtlayout.h"
 
 class QVTerminal : public QAbstractScrollArea
 {
@@ -57,9 +58,11 @@ private:
     int _cw;
     int _ch;
     QPoint _cursorPos;
+    QTimer _cursorTimer;
+    bool _cvisible;
 
     // data
-    QList< QVTLine > _data;
+    QVTLayout *_layout;
 
     // mode
     bool _echo;
@@ -68,7 +71,7 @@ private:
     // QWidget interface
 protected:
     virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *event);
+    virtual void paintEvent(QPaintEvent *paintEvent);
     virtual void resizeEvent(QResizeEvent *event);
     virtual void mousePressEvent(QMouseEvent* event);
 #ifndef QT_NO_CONTEXTMENU

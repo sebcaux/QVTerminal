@@ -13,8 +13,9 @@ QVTerminal::QVTerminal(QWidget *parent)
 {
     _cursorPos.setX(0);
     _cursorPos.setY(0);
+    _cursorTimer.start(500);
 
-    _echo = true;
+    _echo = false;
     _crlf = false;
     _state = QVTerminal::Text;
 
@@ -24,11 +25,11 @@ QVTerminal::QVTerminal(QWidget *parent)
     font.setStyleHint(QFont::Monospace);
     font.setPointSize(13);
     format.setFont(font);
-    format.setForeground(QColor(187,187,187));
-    format.setBackground(QColor(0,0,0));
+    format.setForeground(QColor(187, 187, 187));
+    format.setBackground(QColor(0, 0, 0));
     setFormat(format);
 
-    _data.append(QVTLine());
+    _layout = new QVTLayout();
 
     _pasteAction = new QAction("Paste");
     _pasteAction->setShortcut(QKeySequence("Ctrl+V"));
@@ -55,13 +56,11 @@ void QVTerminal::appendData(QByteArray data)
 {
     QByteArray text;
 
-    //qDebug()<<"appendData"<<data;
-
     setUpdatesEnabled(false);
     QByteArray::const_iterator it = data.cbegin();
     while (it != data.cend())
     {
-        char c = *it;
+        QChar c = *it;
         switch (_state)
         {
         case QVTerminal::Text:
@@ -75,12 +74,12 @@ void QVTerminal::appendData(QByteArray data)
             {
                 appendString(text);
                 text.clear();
-                _data.append(QVTLine());
+                _layout->appendLine();
 
                 _cursorPos.setX(0);
                 _cursorPos.setY(_cursorPos.y() + 1);
             }
-            else
+            else if (c.isPrint())
             {
                 text.append(c);
             }
@@ -94,7 +93,7 @@ void QVTerminal::appendData(QByteArray data)
             break;
         case QVTerminal::Format:
             if (c >= '0' && c <= '9')
-                _formatValue = _formatValue * 10 + (c-'0');
+                _formatValue = _formatValue * 10 + (c.cell() - '0');
             else
             {
                 if (c == ';' || c == 'm')
@@ -139,7 +138,7 @@ void QVTerminal::appendData(QByteArray data)
     }
     appendString(text);
 
-    verticalScrollBar()->setRange(0, _ch * (_data.size() + 1) - viewport()->size().height() + 6);
+    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount() + 1) - viewport()->size().height() + 6);
     verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 
     setUpdatesEnabled(true);
@@ -189,7 +188,7 @@ void QVTerminal::appendString(QString str)
     foreach (QChar c, str)
     {
         QVTChar termChar(c, _curentFormat);
-        _data[_cursorPos.y()].append(termChar);
+        _layout->lineAt(_cursorPos.y()).append(termChar);
         _cursorPos.setX(_cursorPos.x() + 1);
     }
 }
@@ -304,10 +303,10 @@ void QVTerminal::keyPressEvent(QKeyEvent *event)
     QAbstractScrollArea::keyPressEvent(event);
 }
 
-void QVTerminal::paintEvent(QPaintEvent *)
+void QVTerminal::paintEvent(QPaintEvent *paintEvent)
 {
     QPainter p(viewport());
-    p.setPen(QColor(187,187,187));
+    p.setPen(QColor(187, 187, 187));
     p.setBrush(QColor(0x23, 0x26, 0x29));
     p.setFont(_format.font());
 
@@ -318,20 +317,22 @@ void QVTerminal::paintEvent(QPaintEvent *)
 
     int firstLine = verticalScrollBar()->value() / _ch;
     int lastLine = viewport()->size().height() / _ch + firstLine;
-    if (lastLine > _data.size())
-        lastLine = _data.size();
+    if (lastLine > _layout->lineCount())
+        lastLine = _layout->lineCount();
 
     for (int l=firstLine; l<lastLine; l++)
     {
-        //qDebug()<<l;
         pos.setY(pos.y() + _ch);
         pos.setX(3);
-        for (int c=0; c<_data[l].size(); c++)
+        for (int c=0; c<_layout->lineAt(l).size(); c++)
         {
-            const QVTChar &vtChar = _data[l].chars()[c];
+            const QVTChar &vtChar = _layout->lineAt(l).chars()[c];
             pos.setX(pos.x() + _cw);
             p.setPen(vtChar.format().foreground());
-            p.drawText(pos, QString(vtChar.c()));
+            p.drawText(QRect(pos, QSize(_cw, -_ch)).normalized(), Qt::AlignCenter, QString(vtChar.c()));
+
+            p.setBrush(QBrush());
+            p.drawRect(QRect(pos, QSize(_cw, -_ch)));
         }
     }
 }
@@ -341,12 +342,12 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
     Q_UNUSED(event)
     verticalScrollBar()->setPageStep(_ch * 10);
     verticalScrollBar()->setSingleStep(_ch);
-    verticalScrollBar()->setRange(0, _ch * (_data.size()+1) - viewport()->size().height() + 6);
+    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount()+1) - viewport()->size().height() + 6);
 }
 
 void QVTerminal::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::MidButton )
+    if (event->button() == Qt::MidButton)
     {
         if( QApplication::clipboard()->supportsSelection())
         {
