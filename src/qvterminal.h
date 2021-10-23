@@ -5,6 +5,8 @@
 #include <QAction>
 #include <QTimer>
 
+#include <vt/vt.h>
+
 #include "qvtlayout.h"
 
 class QVTerminal : public QAbstractScrollArea
@@ -30,13 +32,13 @@ public:
 signals:
 
 public slots:
-    void writeData(QByteArray data);
+    void writeData(const QByteArray &data);
 
     void paste();
 
 protected slots:
     void read();
-    void appendData(QByteArray data);
+    void appendData(const QByteArray &data);
     void appendString(QString str);
     void toggleCursor();
 
@@ -85,6 +87,7 @@ protected:
     QColor vt100color(char c);
 
     QAction *_pasteAction;
+    VT *_vt;
 };
 
 #endif // QVTERMINAL_H

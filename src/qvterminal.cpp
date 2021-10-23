@@ -8,6 +8,8 @@
 #include <QDebug>
 #include <QMenu>
 
+#include <vt/vt100.h>
+
 QVTerminal::QVTerminal(QWidget *parent)
     : QAbstractScrollArea(parent)
 {
@@ -39,6 +41,8 @@ QVTerminal::QVTerminal(QWidget *parent)
     _pasteAction->setShortcut(QKeySequence("Ctrl+V"));
     connect(_pasteAction, &QAction::triggered, this, &QVTerminal::paste);
     addAction(_pasteAction);
+
+    _vt = new VT100(this);
 }
 
 QVTerminal::~QVTerminal()
@@ -56,7 +60,7 @@ void QVTerminal::setIODevice(QIODevice *device)
     }
 }
 
-void QVTerminal::appendData(QByteArray data)
+void QVTerminal::appendData(const QByteArray &data)
 {
     QByteArray text;
 
@@ -213,9 +217,10 @@ void QVTerminal::setCrlf(bool crlf)
     _crlf = crlf;
 }
 
-void QVTerminal::writeData(QByteArray data)
+void QVTerminal::writeData(const QByteArray &data)
 {
-    _device->write(data);
+    if (_device && _device->isWritable())
+        _device->write(data);
     if (_echo)
         appendData(data);
 }
@@ -239,8 +244,8 @@ void QVTerminal::setFormat(const QVTCharFormat &format)
 {
     _format = format;
     _curentFormat = format;
-    QFontMetrics fm(_format.font());
 
+    QFontMetrics fm(_format.font());
     _cw = fm.boundingRect('M').width();
     _ch = fm.height();
 }
@@ -248,68 +253,19 @@ void QVTerminal::setFormat(const QVTCharFormat &format)
 void QVTerminal::keyPressEvent(QKeyEvent *event)
 {
     QByteArray data;
-    if (_device && _device->isWritable())
-    {
-        QString text;
+    QString text = event->text();
 
-        switch (event->key())
-        {
-        case Qt::Key_Up:
-            data.append(0x1B);
-            data.append('[');
-            data.append('A');
-            _device->write(data);
-            break;
-        case Qt::Key_Down:
-            data.append(0x1B);
-            data.append('[');
-            data.append('B');
-            _device->write(data);
-            break;
-        case Qt::Key_Right:
-            data.append(0x1B);
-            data.append('[');
-            data.append('C');
-            _device->write(data);
-            break;
-        case Qt::Key_Left:
-            data.append(0x1B);
-            data.append('[');
-            data.append('D');
-            _device->write(data);
-            break;
-        case Qt::Key_Home:
-            data.append(0x01);
-            _device->write(data);
-            break;
-        case Qt::Key_End:
-            data.append(0x05);
-            _device->write(data);
-            break;
-        case Qt::Key_Backspace:
-            data.append(127);
-            _device->write(data);
-            break;
-        default:
-            text = event->text();
-            if (text == "\r")
-            {
-                if (_crlf)
-                    _device->write("\r");
-                _device->write("\n");
-                if (_echo)
-                {
-                    data.append("\n");
-                    writeData(data);
-                }
-            }
-            else
-            {
-                data.append(text);
-                writeData(data);
-            }
-        }
+    if (text == "\r")
+    {
+        if (_crlf)
+            data.append("\r");
+        data.append("\n");
     }
+    else
+        data.append(_vt->dataFromKey(event->text(), event->key(), event->modifiers()));
+
+    writeData(data);
+
     QAbstractScrollArea::keyPressEvent(event);
 }
 
@@ -341,8 +297,8 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
             p.setPen(vtChar.format().foreground());
             p.drawText(QRect(pos, QSize(_cw, -_ch)).normalized(), Qt::AlignCenter, QString(vtChar.c()));
 
-            p.setBrush(QBrush());
-            p.drawRect(QRect(pos, QSize(_cw, -_ch)));
+            //p.setBrush(QBrush());
+            //p.drawRect(QRect(pos, QSize(_cw, -_ch)));
         }
     }
 
