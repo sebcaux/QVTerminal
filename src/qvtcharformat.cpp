@@ -2,7 +2,6 @@
 
 QVTCharFormat::QVTCharFormat()
 {
-
 }
 
 const QFont &QVTCharFormat::font() const

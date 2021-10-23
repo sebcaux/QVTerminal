@@ -2,7 +2,6 @@
 
 QVTLine::QVTLine()
 {
-
 }
 
 void QVTLine::append(const QVTChar &c)

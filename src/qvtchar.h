@@ -19,4 +19,4 @@ protected:
     QVTCharFormat _format;
 };
 
-#endif // QVTCHAR_H
+#endif  // QVTCHAR_H

@@ -13,4 +13,4 @@ public:
     QByteArray dataFromKey(QString text, int key, Qt::KeyboardModifiers modifiers);
 };
 
-#endif // VT100_H
+#endif  // VT100_H

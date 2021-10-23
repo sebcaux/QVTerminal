@@ -13,10 +13,10 @@ public:
 
     QVTerminal *terminal() const;
 
-    virtual QByteArray dataFromKey(QString text, int  key, Qt::KeyboardModifiers modifiers);
+    virtual QByteArray dataFromKey(QString text, int key, Qt::KeyboardModifiers modifiers);
 
 protected:
     QVTerminal *_terminal;
 };
 
-#endif // VT_H
+#endif  // VT_H

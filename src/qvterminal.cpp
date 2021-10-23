@@ -1,17 +1,16 @@
 #include "qvterminal.h"
 
-#include <QKeyEvent>
-#include <QPainter>
-#include <QScrollBar>
 #include <QApplication>
 #include <QClipboard>
 #include <QDebug>
+#include <QKeyEvent>
 #include <QMenu>
+#include <QPainter>
+#include <QScrollBar>
 
 #include <vt/vt100.h>
 
-QVTerminal::QVTerminal(QWidget *parent)
-    : QAbstractScrollArea(parent)
+QVTerminal::QVTerminal(QWidget *parent) : QAbstractScrollArea(parent)
 {
     _device = Q_NULLPTR;
 
@@ -47,7 +46,6 @@ QVTerminal::QVTerminal(QWidget *parent)
 
 QVTerminal::~QVTerminal()
 {
-
 }
 
 void QVTerminal::setIODevice(QIODevice *device)
@@ -71,76 +69,91 @@ void QVTerminal::appendData(const QByteArray &data)
         QChar c = *it;
         switch (_state)
         {
-        case QVTerminal::Text:
-            if (c == 0x1B)
-            {
-                appendString(text);
-                text.clear();
-                _state = QVTerminal::Escape;
-            }
-            else if (c == '\n')
-            {
-                appendString(text);
-                text.clear();
-                _layout->appendLine();
-
-                _cursorPos.setX(0);
-                _cursorPos.setY(_cursorPos.y() + 1);
-            }
-            else if (c.isPrint())
-            {
-                text.append(c);
-            }
-            break;
-        case QVTerminal::Escape:
-            _formatValue = 0;
-            if (c == '[')
-                _state = QVTerminal::Format;
-            else if (c == '(')
-                _state = QVTerminal::ResetFont;
-            break;
-        case QVTerminal::Format:
-            if (c >= '0' && c <= '9')
-                _formatValue = _formatValue * 10 + (c.cell() - '0');
-            else
-            {
-                if (c == ';' || c == 'm')
+            case QVTerminal::Text:
+                if (c == 0x1B)
                 {
-                    if (_formatValue == 0) // reset format
-                        _curentFormat = _format;
-                    else if (_formatValue == 4) // underline
-                        _curentFormat.font().setUnderline(true);
-                    else if (_formatValue == 7) // reverse
-                    {
-                        QColor foreground = _curentFormat.foreground();
-                        _curentFormat.setForeground(_curentFormat.background());
-                        _curentFormat.setBackground(foreground);
-                    }
-                    else if (_formatValue / 10 == 3) // foreground
-                        _curentFormat.setForeground(vt100color((_formatValue % 10) + '0'));
-                    else if (_formatValue / 10 == 4) // background
-                        _curentFormat.setBackground(vt100color((_formatValue % 10) + '0'));
+                    appendString(text);
+                    text.clear();
+                    _state = QVTerminal::Escape;
+                }
+                else if (c == '\n')
+                {
+                    appendString(text);
+                    text.clear();
+                    _layout->appendLine();
 
-                    if (c == ';')
+                    _cursorPos.setX(0);
+                    _cursorPos.setY(_cursorPos.y() + 1);
+                }
+                else if (c.isPrint())
+                {
+                    text.append(c);
+                }
+                break;
+
+            case QVTerminal::Escape:
+                _formatValue = 0;
+                if (c == '[')
+                {
+                    _state = QVTerminal::Format;
+                }
+                else if (c == '(')
+                {
+                    _state = QVTerminal::ResetFont;
+                }
+                break;
+
+            case QVTerminal::Format:
+                if (c >= '0' && c <= '9')
+                    _formatValue = _formatValue * 10 + (c.cell() - '0');
+                else
+                {
+                    if (c == ';' || c == 'm')
                     {
-                        _formatValue = 0;
-                        _state = QVTerminal::Format;
+                        if (_formatValue == 0)  // reset format
+                        {
+                            _curentFormat = _format;
+                        }
+                        else if (_formatValue == 4)  // underline
+                        {
+                            _curentFormat.font().setUnderline(true);
+                        }
+                        else if (_formatValue == 7)  // reverse
+                        {
+                            QColor foreground = _curentFormat.foreground();
+                            _curentFormat.setForeground(_curentFormat.background());
+                            _curentFormat.setBackground(foreground);
+                        }
+                        else if (_formatValue / 10 == 3)  // foreground
+                        {
+                            _curentFormat.setForeground(vt100color((_formatValue % 10) + '0'));
+                        }
+                        else if (_formatValue / 10 == 4)  // background
+                        {
+                            _curentFormat.setBackground(vt100color((_formatValue % 10) + '0'));
+                        }
+
+                        if (c == ';')
+                        {
+                            _formatValue = 0;
+                            _state = QVTerminal::Format;
+                        }
+                        else
+                        {
+                            _state = QVTerminal::Text;
+                        }
                     }
                     else
                     {
                         _state = QVTerminal::Text;
                     }
                 }
-                else
-                {
-                    _state = QVTerminal::Text;
-                }
-            }
-            break;
-        case QVTerminal::ResetFont:
-            _curentFormat = _format;
-            _state = QVTerminal::Text;
-            break;
+                break;
+
+            case QVTerminal::ResetFont:
+                _curentFormat = _format;
+                _state = QVTerminal::Text;
+                break;
         }
         it++;
     }
@@ -164,31 +177,42 @@ QColor QVTerminal::vt100color(char c)
 {
     switch (c)
     {
-    case '1':
-        return QColor(Qt::red);
-    case '2':
-        return QColor(Qt::green);
-    case '3':
-        return QColor(Qt::yellow);
-    case '4':
-        return QColor(Qt::blue);
-    case '5':
-        return QColor(Qt::magenta);
-    case '6':
-        return QColor(Qt::cyan);
-    case '7':
-        return QColor(Qt::white);
-    default:
-        return QColor(Qt::black);
+        case '1':
+            return QColor(Qt::red);
+
+        case '2':
+            return QColor(Qt::green);
+
+        case '3':
+            return QColor(Qt::yellow);
+
+        case '4':
+            return QColor(Qt::blue);
+
+        case '5':
+            return QColor(Qt::magenta);
+
+        case '6':
+            return QColor(Qt::cyan);
+
+        case '7':
+            return QColor(Qt::white);
+
+        default:
+            return QColor(Qt::black);
     }
 }
 
 void QVTerminal::read()
 {
     if (!_device)
+    {
         return;
+    }
     if (_device->isReadable())
+    {
         appendData(_device->readAll());
+    }
 }
 
 void QVTerminal::appendString(QString str)
@@ -220,9 +244,13 @@ void QVTerminal::setCrlf(bool crlf)
 void QVTerminal::writeData(const QByteArray &data)
 {
     if (_device && _device->isWritable())
+    {
         _device->write(data);
+    }
     if (_echo)
+    {
         appendData(data);
+    }
 }
 
 bool QVTerminal::echo() const
@@ -258,11 +286,15 @@ void QVTerminal::keyPressEvent(QKeyEvent *event)
     if (text == "\r")
     {
         if (_crlf)
+        {
             data.append("\r");
+        }
         data.append("\n");
     }
     else
+    {
         data.append(_vt->dataFromKey(event->text(), event->key(), event->modifiers()));
+    }
 
     writeData(data);
 
@@ -284,26 +316,30 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
     int firstLine = verticalScrollBar()->value() / _ch;
     int lastLine = viewport()->size().height() / _ch + firstLine;
     if (lastLine > _layout->lineCount())
+    {
         lastLine = _layout->lineCount();
+    }
 
-    for (int l=firstLine; l<lastLine; l++)
+    for (int l = firstLine; l < lastLine; l++)
     {
         pos.setY(pos.y() + _ch);
         pos.setX(3);
-        for (int c=0; c<_layout->lineAt(l).size(); c++)
+        for (int c = 0; c < _layout->lineAt(l).size(); c++)
         {
             const QVTChar &vtChar = _layout->lineAt(l).chars()[c];
             pos.setX(pos.x() + _cw);
             p.setPen(vtChar.format().foreground());
             p.drawText(QRect(pos, QSize(_cw, -_ch)).normalized(), Qt::AlignCenter, QString(vtChar.c()));
 
-            //p.setBrush(QBrush());
-            //p.drawRect(QRect(pos, QSize(_cw, -_ch)));
+            // p.setBrush(QBrush());
+            // p.drawRect(QRect(pos, QSize(_cw, -_ch)));
         }
     }
 
     if (_cvisible)
+    {
         p.fillRect(QRect((_cursorPos.x() + 1) * _cw + 3, _cursorPos.y() * _ch + 3 + firstLine, _cw, _ch), QColor(187, 187, 187));
+    }
 }
 
 void QVTerminal::resizeEvent(QResizeEvent *event)
@@ -311,14 +347,14 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
     Q_UNUSED(event)
     verticalScrollBar()->setPageStep(_ch * 10);
     verticalScrollBar()->setSingleStep(_ch);
-    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount()+1) - viewport()->size().height() + 6);
+    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount() + 1) - viewport()->size().height() + 6);
 }
 
 void QVTerminal::mousePressEvent(QMouseEvent *event)
 {
     if (event->button() == Qt::MidButton)
     {
-        if( QApplication::clipboard()->supportsSelection())
+        if (QApplication::clipboard()->supportsSelection())
         {
             QByteArray data;
             data.append(QApplication::clipboard()->text(QClipboard::Selection));
@@ -336,7 +372,7 @@ void QVTerminal::contextMenuEvent(QContextMenuEvent *event)
     _pasteAction->setEnabled(!QApplication::clipboard()->text().isEmpty());
     menu.exec(event->globalPos());
 }
-#endif // QT_NO_CONTEXTMENU
+#endif  // QT_NO_CONTEXTMENU
 
 bool QVTerminal::viewportEvent(QEvent *event)
 {

@@ -46,7 +46,8 @@ private:
     QIODevice *_device;
 
     // parser
-    enum State {
+    enum State
+    {
         Text,
         Escape,
         Format,
@@ -76,10 +77,10 @@ protected:
     virtual void keyPressEvent(QKeyEvent *event);
     virtual void paintEvent(QPaintEvent *event);
     virtual void resizeEvent(QResizeEvent *event);
-    virtual void mousePressEvent(QMouseEvent* event);
+    virtual void mousePressEvent(QMouseEvent *event);
 #ifndef QT_NO_CONTEXTMENU
     virtual void contextMenuEvent(QContextMenuEvent *event);
-#endif // QT_NO_CONTEXTMENU
+#endif  // QT_NO_CONTEXTMENU
 
     // QAbstractScrollArea interface
 protected:
@@ -90,4 +91,4 @@ protected:
     VT *_vt;
 };
 
-#endif // QVTERMINAL_H
+#endif  // QVTERMINAL_H

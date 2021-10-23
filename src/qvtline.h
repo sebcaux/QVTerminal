@@ -13,7 +13,7 @@ public:
     int size() const;
 
 protected:
-    QList< QVTChar > _chars;
+    QList<QVTChar> _chars;
 };
 
-#endif // QVTLINE_H
+#endif  // QVTLINE_H

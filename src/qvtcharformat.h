@@ -25,4 +25,4 @@ protected:
     QColor _background;
 };
 
-#endif // QVTCHARFORMAT_H
+#endif  // QVTCHARFORMAT_H
