@@ -45,6 +45,8 @@ QVTerminal::QVTerminal(QWidget *parent)
     addAction(_pasteAction);
 
     _vt = new VT100(this);
+
+    setCursor(QCursor(Qt::IBeamCursor));
 }
 
 QVTerminal::~QVTerminal()
