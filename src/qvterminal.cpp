@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <QScrollBar>
+#include <QTextCodec>
 
 #include <vt/vt100.h>
 
@@ -61,11 +62,16 @@ void QVTerminal::setIODevice(QIODevice *device)
 
 void QVTerminal::appendData(const QByteArray &data)
 {
-    QByteArray text;
+    QString text;
+
 
     setUpdatesEnabled(false);
-    QByteArray::const_iterator it = data.cbegin();
-    while (it != data.cend())
+
+    QTextCodec *textCodec = QTextCodec::codecForName("UTF-8");
+    QString dataString = textCodec->toUnicode(data);
+
+    QString::const_iterator it = dataString.cbegin();
+    while (it != dataString.cend())
     {
         QChar c = *it;
         switch (_state)
@@ -172,7 +178,7 @@ void QVTerminal::appendData(const QByteArray &data)
 void QVTerminal::paste()
 {
     QByteArray data;
-    data.append(QApplication::clipboard()->text());
+    data.append(QApplication::clipboard()->text().toUtf8());
     writeData(data);
 }
 
