@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QPainter>
 #include <QScrollBar>
+#include <QStyleHints>
 #include <QTextCodec>
 
 #include <vt/vt100.h>
@@ -18,7 +19,7 @@ QVTerminal::QVTerminal(QWidget *parent)
 
     _cursorPos.setX(0);
     _cursorPos.setY(0);
-    _cursorTimer.start(500);
+    _cursorTimer.start(QGuiApplication::styleHints()->cursorFlashTime() / 2);
     _cvisible = true;
     connect(&_cursorTimer, &QTimer::timeout, this, &QVTerminal::toggleCursor);
 
