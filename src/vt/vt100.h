@@ -10,7 +10,7 @@ public:
 
     // VT interface
 public:
-    QByteArray dataFromKey(QString text, int key, Qt::KeyboardModifiers modifiers);
+    QByteArray dataFromKey(const QString &text, int key, Qt::KeyboardModifiers modifiers) override;
 };
 
 #endif  // VT100_H

@@ -5,7 +5,7 @@ VT100::VT100(QVTerminal *terminal)
 {
 }
 
-QByteArray VT100::dataFromKey(QString text, int key, Qt::KeyboardModifiers modifiers)
+QByteArray VT100::dataFromKey(const QString &text, int key, Qt::KeyboardModifiers modifiers)
 {
     Q_UNUSED(modifiers)
 

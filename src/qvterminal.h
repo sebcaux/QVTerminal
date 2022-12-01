@@ -14,7 +14,7 @@ class QVTerminal : public QAbstractScrollArea
     Q_OBJECT
 public:
     explicit QVTerminal(QWidget *parent = nullptr);
-    ~QVTerminal();
+    ~QVTerminal() override;
 
     void setIODevice(QIODevice *device);
 
@@ -39,7 +39,7 @@ public slots:
 protected slots:
     void read();
     void appendData(const QByteArray &data);
-    void appendString(QString str);
+    void appendString(const QString &str);
     void toggleCursor();
 
 private:
@@ -74,17 +74,17 @@ private:
 
     // QWidget interface
 protected:
-    virtual void keyPressEvent(QKeyEvent *event);
-    virtual void paintEvent(QPaintEvent *event);
-    virtual void resizeEvent(QResizeEvent *event);
-    virtual void mousePressEvent(QMouseEvent *event);
+    void keyPressEvent(QKeyEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
 #ifndef QT_NO_CONTEXTMENU
-    virtual void contextMenuEvent(QContextMenuEvent *event);
+    void contextMenuEvent(QContextMenuEvent *event) override;
 #endif  // QT_NO_CONTEXTMENU
 
     // QAbstractScrollArea interface
 protected:
-    virtual bool viewportEvent(QEvent *event);
+    bool viewportEvent(QEvent *event) override;
     QColor vt100color(char c);
 
     QAction *_pasteAction;

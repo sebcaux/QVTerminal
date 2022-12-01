@@ -10,7 +10,8 @@
 
 #include <vt/vt100.h>
 
-QVTerminal::QVTerminal(QWidget *parent) : QAbstractScrollArea(parent)
+QVTerminal::QVTerminal(QWidget *parent)
+    : QAbstractScrollArea(parent)
 {
     _device = Q_NULLPTR;
 
@@ -105,7 +106,9 @@ void QVTerminal::appendData(const QByteArray &data)
 
             case QVTerminal::Format:
                 if (c >= '0' && c <= '9')
+                {
                     _formatValue = _formatValue * 10 + (c.cell() - '0');
+                }
                 else
                 {
                     if (c == ';' || c == 'm')
@@ -126,11 +129,11 @@ void QVTerminal::appendData(const QByteArray &data)
                         }
                         else if (_formatValue / 10 == 3)  // foreground
                         {
-                            _curentFormat.setForeground(vt100color((_formatValue % 10) + '0'));
+                            _curentFormat.setForeground(vt100color(static_cast<char>(_formatValue % 10) + '0'));
                         }
                         else if (_formatValue / 10 == 4)  // background
                         {
-                            _curentFormat.setBackground(vt100color((_formatValue % 10) + '0'));
+                            _curentFormat.setBackground(vt100color(static_cast<char>(_formatValue % 10) + '0'));
                         }
 
                         if (c == ';')
@@ -215,7 +218,7 @@ void QVTerminal::read()
     }
 }
 
-void QVTerminal::appendString(QString str)
+void QVTerminal::appendString(const QString &str)
 {
     foreach (QChar c, str)
     {
@@ -303,6 +306,8 @@ void QVTerminal::keyPressEvent(QKeyEvent *event)
 
 void QVTerminal::paintEvent(QPaintEvent *paintEvent)
 {
+    Q_UNUSED(paintEvent);
+
     QPainter p(viewport());
     p.setPen(QColor(187, 187, 187));
     p.setBrush(QColor(0x23, 0x26, 0x29));
@@ -352,16 +357,16 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
 
 void QVTerminal::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::MidButton)
+    if (event->button() == Qt::MiddleButton)
     {
         if (QApplication::clipboard()->supportsSelection())
         {
             QByteArray data;
-            data.append(QApplication::clipboard()->text(QClipboard::Selection));
+            data.append(QApplication::clipboard()->text(QClipboard::Selection).toUtf8());
             writeData(data);
         }
     }
-    QWidget::mousePressEvent(event);
+    QAbstractScrollArea::mousePressEvent(event);
 }
 
 #ifndef QT_NO_CONTEXTMENU
