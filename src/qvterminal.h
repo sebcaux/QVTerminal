@@ -29,7 +29,10 @@ public:
     bool crlf() const;
     void setCrlf(bool crlf);
 
+    QPoint cursorPos() const;
+
 signals:
+    void cursorMoved(QPoint cursorPos);
 
 public slots:
     void writeData(const QByteArray &data);
@@ -57,6 +60,8 @@ private:
     int _formatValue;
 
     // cursor
+    void setCursorPos(int x, int y);
+    void setCursorPos(QPoint cursorPos);
     QVTCharFormat _format;
     QVTCharFormat _curentFormat;
     int _cw;

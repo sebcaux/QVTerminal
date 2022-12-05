@@ -17,8 +17,7 @@ QVTerminal::QVTerminal(QWidget *parent)
 {
     _device = Q_NULLPTR;
 
-    _cursorPos.setX(0);
-    _cursorPos.setY(0);
+    setCursorPos(QPoint(0, 0));
     _cursorTimer.start(QGuiApplication::styleHints()->cursorFlashTime() / 2);
     _cvisible = true;
     connect(&_cursorTimer, &QTimer::timeout, this, &QVTerminal::toggleCursor);
@@ -67,7 +66,6 @@ void QVTerminal::appendData(const QByteArray &data)
 {
     QString text;
 
-
     setUpdatesEnabled(false);
 
     QTextCodec *textCodec = QTextCodec::codecForName("UTF-8");
@@ -92,8 +90,7 @@ void QVTerminal::appendData(const QByteArray &data)
                     text.clear();
                     _layout->appendLine();
 
-                    _cursorPos.setX(0);
-                    _cursorPos.setY(_cursorPos.y() + 1);
+                    setCursorPos(0, _cursorPos.y() + 1);
                 }
                 else if (c.isPrint())
                 {
@@ -233,7 +230,7 @@ void QVTerminal::appendString(const QString &str)
     {
         QVTChar termChar(c, _curentFormat);
         _layout->lineAt(_cursorPos.y()).append(termChar);
-        _cursorPos.setX(_cursorPos.x() + 1);
+        setCursorPos(_cursorPos.x() + 1, _cursorPos.y());
     }
 }
 
@@ -241,6 +238,25 @@ void QVTerminal::toggleCursor()
 {
     _cvisible = !_cvisible;
     viewport()->update();
+}
+
+void QVTerminal::setCursorPos(int x, int y)
+{
+    setCursorPos(QPoint(x, y));
+}
+
+void QVTerminal::setCursorPos(QPoint cursorPos)
+{
+    if (cursorPos != _cursorPos)
+    {
+        _cursorPos = cursorPos;
+        emit cursorMoved(cursorPos);
+    }
+}
+
+QPoint QVTerminal::cursorPos() const
+{
+    return _cursorPos;
 }
 
 bool QVTerminal::crlf() const
