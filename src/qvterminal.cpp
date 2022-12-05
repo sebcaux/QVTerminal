@@ -117,7 +117,7 @@ void QVTerminal::appendData(const QByteArray &data)
                 }
                 else
                 {
-                    if (c == ';' || c == 'm')
+                    if (c == ';' || c == 'm')  // Format
                     {
                         if (_formatValue == 0)  // reset format
                         {
@@ -151,6 +151,31 @@ void QVTerminal::appendData(const QByteArray &data)
                         {
                             _state = QVTerminal::Text;
                         }
+                    }
+                    else if (c >= 'A' || c <= 'D')  // Cursor command
+                    {
+                        switch (c.toLatin1())
+                        {
+                            case 'A':  // up
+                                // TODO
+                                break;
+
+                            case 'B':  // down
+                                // TODO
+                                break;
+
+                            case 'C':  // right
+                                setCursorPos(_cursorPos.x() + _formatValue, _cursorPos.y());
+                                break;
+
+                            case 'D':  // left
+                                setCursorPos(qMax(_cursorPos.x() - _formatValue, 0), _cursorPos.y());
+                                break;
+
+                            default:
+                                break;
+                        }
+                        _state = QVTerminal::Text;
                     }
                     else
                     {
@@ -229,7 +254,7 @@ void QVTerminal::appendString(const QString &str)
     foreach (QChar c, str)
     {
         QVTChar termChar(c, _curentFormat);
-        _layout->lineAt(_cursorPos.y()).append(termChar);
+        _layout->lineAt(_cursorPos.y()).replace(termChar, _cursorPos.x());
         setCursorPos(_cursorPos.x() + 1, _cursorPos.y());
     }
 }

@@ -9,6 +9,8 @@ public:
     QVTLine();
 
     void append(const QVTChar &c);
+    void insert(const QVTChar &c, int pos);
+    void replace(const QVTChar &c, int pos);
     const QList<QVTChar> &chars() const;
     int size() const;
 
