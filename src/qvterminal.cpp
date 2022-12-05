@@ -8,7 +8,12 @@
 #include <QPainter>
 #include <QScrollBar>
 #include <QStyleHints>
-#include <QTextCodec>
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+#   include <QTextCodec>
+#else
+#   include <QStringDecoder>
+#endif
 
 #include <vt/vt100.h>
 
@@ -68,8 +73,12 @@ void QVTerminal::appendData(const QByteArray &data)
 
     setUpdatesEnabled(false);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
     QTextCodec *textCodec = QTextCodec::codecForName("UTF-8");
     QString dataString = textCodec->toUnicode(data);
+#else
+    QString dataString = QStringDecoder(QStringDecoder::Utf8)(data);
+#endif
 
     QString::const_iterator it = dataString.cbegin();
     while (it != dataString.cend())
@@ -78,7 +87,7 @@ void QVTerminal::appendData(const QByteArray &data)
         switch (_state)
         {
             case QVTerminal::Text:
-                if (c == 0x1B)
+                if (c.toLatin1() == 0x1B)
                 {
                     appendString(text);
                     text.clear();

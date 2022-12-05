@@ -50,7 +50,7 @@ QByteArray VT100::dataFromKey(const QString &text, int key, Qt::KeyboardModifier
             break;
 
         default:
-            data.append(text);
+            data.append(text.toLatin1());
             break;
     }
 
