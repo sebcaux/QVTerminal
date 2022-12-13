@@ -17,6 +17,9 @@
 
 #include <vt/vt100.h>
 
+static const int xMargin = 3;
+static const int yMargin = 3;
+
 QVTerminal::QVTerminal(QWidget *parent)
     : QAbstractScrollArea(parent)
 {
@@ -202,7 +205,7 @@ void QVTerminal::appendData(const QByteArray &data)
     }
     appendString(text);
 
-    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount() + 1) - viewport()->size().height() + 6);
+    verticalScrollBar()->setRange(0, _layout->lineCount() * _ch + yMargin * 2 - viewport()->size().height());
     verticalScrollBar()->setValue(verticalScrollBar()->maximum());
 
     setUpdatesEnabled(true);
@@ -368,41 +371,44 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
     Q_UNUSED(paintEvent);
 
     QPainter p(viewport());
+    p.setPen(QPen());
+    p.fillRect(viewport()->rect(), QColor(0x23, 0x26, 0x29));
+
+    p.translate(QPoint(xMargin, -verticalScrollBar()->value() + yMargin));
     p.setPen(QColor(187, 187, 187));
     p.setBrush(QColor(0x23, 0x26, 0x29));
     p.setFont(_format.font());
 
-    p.fillRect(viewport()->rect(), QColor(0x23, 0x26, 0x29));
-
-    QPoint pos;
-    pos.setY(3);
-
     int firstLine = verticalScrollBar()->value() / _ch;
-    int lastLine = viewport()->size().height() / _ch + firstLine;
+    int lastLine = viewport()->size().height() / _ch + firstLine + 1;
     if (lastLine > _layout->lineCount())
     {
         lastLine = _layout->lineCount();
     }
 
-    for (int l = firstLine; l < lastLine; l++)
+    QPoint pos(0, firstLine * _ch);
+    for (int l = firstLine; l < lastLine; l++)  // render only visible lines
     {
         pos.setY(pos.y() + _ch);
-        pos.setX(3);
+        pos.setX(0);
         for (int c = 0; c < _layout->lineAt(l).size(); c++)
         {
             const QVTChar &vtChar = _layout->lineAt(l).chars()[c];
-            pos.setX(pos.x() + _cw);
+            // draw background
+            // p.setBrush(QBrush());
+            // p.drawRect(QRect(pos, QSize(_cw, -_ch)));
+
+            // draw foreground
             p.setPen(vtChar.format().foreground());
             p.drawText(QRect(pos, QSize(_cw, -_ch)).normalized(), Qt::AlignCenter, QString(vtChar.c()));
 
-            // p.setBrush(QBrush());
-            // p.drawRect(QRect(pos, QSize(_cw, -_ch)));
+            pos.setX(pos.x() + _cw);
         }
     }
 
     if (_cvisible)
     {
-        p.fillRect(QRect((_cursorPos.x() + 1) * _cw + 3, _cursorPos.y() * _ch + 3 + firstLine, _cw, _ch), QColor(187, 187, 187));
+        p.fillRect(QRect(_cursorPos.x() * _cw, _cursorPos.y() * _ch, _cw, _ch), QColor(187, 187, 187, 187));
     }
 }
 
@@ -411,7 +417,7 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
     Q_UNUSED(event)
     verticalScrollBar()->setPageStep(_ch * 10);
     verticalScrollBar()->setSingleStep(_ch);
-    verticalScrollBar()->setRange(0, _ch * (_layout->lineCount() + 1) - viewport()->size().height() + 6);
+    verticalScrollBar()->setRange(0, _layout->lineCount() * _ch + yMargin * 2 - viewport()->size().height());
 }
 
 void QVTerminal::mousePressEvent(QMouseEvent *event)
