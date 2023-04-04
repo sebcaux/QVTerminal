@@ -30,6 +30,7 @@ public:
     void setCrlf(bool crlf);
 
     QPoint cursorPos() const;
+    QPoint posToCursor(const QPoint &cursorPos) const;
 
 signals:
     void cursorMoved(QPoint cursorPos);
@@ -71,6 +72,11 @@ private:
     QTimer _cursorTimer;
     bool _cvisible;
 
+    // select
+    QPoint _startCursorSelectPos;
+    QPoint _startSelectPos;
+    QPoint _endSelectPos;
+
     // data
     QVTLayout *_layout;
 
@@ -88,6 +94,8 @@ protected:
     void paintEvent(QPaintEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 #ifndef QT_NO_CONTEXTMENU
     void contextMenuEvent(QContextMenuEvent *event) override;
 #endif  // QT_NO_CONTEXTMENU

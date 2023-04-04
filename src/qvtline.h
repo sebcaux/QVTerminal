@@ -11,8 +11,13 @@ public:
     void append(const QVTChar &c);
     void insert(const QVTChar &c, int pos);
     void replace(const QVTChar &c, int pos);
+
     const QList<QVTChar> &chars() const;
-    int size() const;
+
+    QString text() const;
+    QString text(qsizetype position, qsizetype n = -1) const;
+
+    qsizetype size() const;
 
 protected:
     QList<QVTChar> _chars;

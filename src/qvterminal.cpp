@@ -10,9 +10,9 @@
 #include <QStyleHints>
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
-#   include <QTextCodec>
+#    include <QTextCodec>
 #else
-#   include <QStringDecoder>
+#    include <QStringDecoder>
 #endif
 
 #include <vt/vt100.h>
@@ -41,7 +41,7 @@ QVTerminal::QVTerminal(QWidget *parent)
     font.setPointSize(13);
     format.setFont(font);
     format.setForeground(QColor(187, 187, 187));
-    format.setBackground(QColor(0, 0, 0));
+    format.setBackground(QColor(0x23, 0x26, 0x29));
     setFormat(format);
 
     _layout = new QVTLayout();
@@ -57,7 +57,7 @@ QVTerminal::QVTerminal(QWidget *parent)
 
     _vt = new VT100(this);
 
-    setCursor(QCursor(Qt::IBeamCursor));
+    viewport()->setCursor(QCursor(Qt::IBeamCursor));
 }
 
 QVTerminal::~QVTerminal()
@@ -308,6 +308,11 @@ QPoint QVTerminal::cursorPos() const
     return _cursorPos;
 }
 
+QPoint QVTerminal::posToCursor(const QPoint &cursorPos) const
+{
+    return QPoint((cursorPos.x() - xMargin) / _cw, (cursorPos.y() - yMargin + verticalScrollBar()->value()) / _ch);
+}
+
 bool QVTerminal::crlf() const
 {
     return _crlf;
@@ -375,7 +380,7 @@ void QVTerminal::keyPressEvent(QKeyEvent *event)
 
     writeData(data);
 
-    QAbstractScrollArea::keyPressEvent(event);
+    // QAbstractScrollArea::keyPressEvent(event);
 }
 
 void QVTerminal::paintEvent(QPaintEvent *paintEvent)
@@ -383,12 +388,12 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
     Q_UNUSED(paintEvent);
 
     QPainter p(viewport());
+
     p.setPen(QPen());
     p.fillRect(viewport()->rect(), QColor(0x23, 0x26, 0x29));
 
     p.translate(QPoint(xMargin, -verticalScrollBar()->value() + yMargin));
-    p.setPen(QColor(187, 187, 187));
-    p.setBrush(QColor(0x23, 0x26, 0x29));
+    p.setBrush(_format.background());
     p.setFont(_format.font());
 
     int firstLine = verticalScrollBar()->value() / _ch;
@@ -401,17 +406,54 @@ void QVTerminal::paintEvent(QPaintEvent *paintEvent)
     QPoint pos(0, firstLine * _ch);
     for (int l = firstLine; l < lastLine; l++)  // render only visible lines
     {
+        const QVTLine &line = _layout->lineAt(l);
+
         pos.setY(pos.y() + _ch);
         pos.setX(0);
-        for (int c = 0; c < _layout->lineAt(l).size(); c++)
+        for (int c = 0; c < line.size(); c++)
         {
-            const QVTChar &vtChar = _layout->lineAt(l).chars()[c];
+            const QVTChar &vtChar = line.chars()[c];
+            QColor foreground = vtChar.format().foreground();
+            QColor background = vtChar.format().background();
+            bool inverted = false;
+
+            // select range
+            if (!_endSelectPos.isNull())
+            {
+                if (l > _startSelectPos.y() && l < _endSelectPos.y())
+                {
+                    inverted = true;
+                }
+                if (l == _startSelectPos.y())
+                {
+                    if (l == _endSelectPos.y())
+                    {
+                        inverted = (c >= _startSelectPos.x() && c <= _endSelectPos.x());
+                    }
+                    else
+                    {
+                        inverted = (c >= _startSelectPos.x());
+                    }
+                }
+                else if (l == _endSelectPos.y())
+                {
+                    inverted = (c <= _endSelectPos.x());
+                }
+            }
+
+            if (inverted)
+            {
+                qSwap(foreground, background);
+            }
+
             // draw background
-            // p.setBrush(QBrush());
-            // p.drawRect(QRect(pos, QSize(_cw, -_ch)));
+            if (background != _format.background())
+            {
+                p.fillRect(QRect(pos, QSize(_cw, -_ch)), background);
+            }
 
             // draw foreground
-            p.setPen(vtChar.format().foreground());
+            p.setPen(foreground);
             p.drawText(QRect(pos, QSize(_cw, -_ch)).normalized(), Qt::AlignCenter, QString(vtChar.c()));
 
             pos.setX(pos.x() + _cw);
@@ -434,6 +476,12 @@ void QVTerminal::resizeEvent(QResizeEvent *event)
 
 void QVTerminal::mousePressEvent(QMouseEvent *event)
 {
+    if (event->button() == Qt::LeftButton)
+    {
+        _endSelectPos = QPoint();
+        _startCursorSelectPos = posToCursor(event->pos());
+        setMouseTracking(true);
+    }
     if (event->button() == Qt::MiddleButton)
     {
         if (QApplication::clipboard()->supportsSelection())
@@ -478,7 +526,6 @@ void QVTerminal::mouseReleaseEvent(QMouseEvent *event)
         _startCursorSelectPos = QPoint();
         viewport()->update();
         setMouseTracking(false);
-        qDebug() << _startSelectPos << _endSelectPos;
     }
     QAbstractScrollArea::mouseReleaseEvent(event);
 }

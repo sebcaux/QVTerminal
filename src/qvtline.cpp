@@ -37,7 +37,38 @@ const QList<QVTChar> &QVTLine::chars() const
     return _chars;
 }
 
-int QVTLine::size() const
+QString QVTLine::text() const
+{
+    QString text;
+    for (const QVTChar &c : _chars)
+    {
+        text.append(c.c());
+    }
+    return text;
+}
+
+QString QVTLine::text(qsizetype position, qsizetype n) const
+{
+    if (position >= _chars.size() || position < 0)
+    {
+        return QString();
+    }
+
+    qsizetype size = n;
+    if (position + size > _chars.size())
+    {
+        size = _chars.size() - position;
+    }
+
+    QString text;
+    for (qsizetype col = position; col < position + size; col++)
+    {
+        text.append(_chars[col].c());
+    }
+    return text;
+}
+
+qsizetype QVTLine::size() const
 {
     return _chars.size();
 }
