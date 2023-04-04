@@ -13,6 +13,8 @@ public:
 
     void appendLine();
 
+    void clear();
+
 protected:
     QList<QVTLine> _lines;
 };

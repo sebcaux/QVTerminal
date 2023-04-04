@@ -38,6 +38,7 @@ public slots:
     void writeData(const QByteArray &data);
 
     void paste();
+    void clear();
 
 protected slots:
     void read();
@@ -77,6 +78,10 @@ private:
     bool _echo;
     bool _crlf;
 
+    QAction *_pasteAction;
+    QAction *_clearAction;
+    VT *_vt;
+
     // QWidget interface
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -91,9 +96,6 @@ protected:
 protected:
     bool viewportEvent(QEvent *event) override;
     QColor vt100color(char c);
-
-    QAction *_pasteAction;
-    VT *_vt;
 };
 
 #endif  // QVTERMINAL_H

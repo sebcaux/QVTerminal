@@ -19,3 +19,9 @@ void QVTLayout::appendLine()
 {
     _lines.append(QVTLine());
 }
+
+void QVTLayout::clear()
+{
+    _lines.clear();
+    appendLine();
+}

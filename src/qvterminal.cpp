@@ -51,6 +51,10 @@ QVTerminal::QVTerminal(QWidget *parent)
     connect(_pasteAction, &QAction::triggered, this, &QVTerminal::paste);
     addAction(_pasteAction);
 
+    _clearAction = new QAction("Clear all");
+    connect(_clearAction, &QAction::triggered, this, &QVTerminal::clear);
+    addAction(_clearAction);
+
     _vt = new VT100(this);
 
     setCursor(QCursor(Qt::IBeamCursor));
@@ -217,6 +221,14 @@ void QVTerminal::paste()
     QByteArray data;
     data.append(QApplication::clipboard()->text().toUtf8());
     writeData(data);
+}
+
+void QVTerminal::clear()
+{
+    setUpdatesEnabled(false);
+    _layout->clear();
+    setCursorPos(0, 0);
+    setUpdatesEnabled(true);
 }
 
 QColor QVTerminal::vt100color(char c)
@@ -434,12 +446,50 @@ void QVTerminal::mousePressEvent(QMouseEvent *event)
     QAbstractScrollArea::mousePressEvent(event);
 }
 
+void QVTerminal::mouseMoveEvent(QMouseEvent *event)
+{
+    if (!_startCursorSelectPos.isNull())
+    {
+        _endSelectPos = posToCursor(event->pos());
+        if ((_startCursorSelectPos.y() > _endSelectPos.y())
+            || (_startCursorSelectPos.y() == _endSelectPos.y() && _startCursorSelectPos.x() > _endSelectPos.x()))
+        {
+            _startSelectPos = posToCursor(event->pos());
+            _endSelectPos = _startCursorSelectPos;
+        }
+        else
+        {
+            _startSelectPos = _startCursorSelectPos;
+            _endSelectPos = posToCursor(event->pos());
+        }
+        viewport()->update();
+    }
+}
+
+void QVTerminal::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (event->button() == Qt::LeftButton)
+    {
+        if (_startCursorSelectPos == _endSelectPos)
+        {
+            _startSelectPos = QPoint();
+            _endSelectPos = QPoint();
+        }
+        _startCursorSelectPos = QPoint();
+        viewport()->update();
+        setMouseTracking(false);
+        qDebug() << _startSelectPos << _endSelectPos;
+    }
+    QAbstractScrollArea::mouseReleaseEvent(event);
+}
+
 #ifndef QT_NO_CONTEXTMENU
 void QVTerminal::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
-    menu.addAction(_pasteAction);
     _pasteAction->setEnabled(!QApplication::clipboard()->text().isEmpty());
+    menu.addAction(_pasteAction);
+    menu.addAction(_clearAction);
     menu.exec(event->globalPos());
 }
 #endif  // QT_NO_CONTEXTMENU
