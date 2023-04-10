@@ -209,8 +209,12 @@ void QVTerminal::appendData(const QByteArray &data)
     }
     appendString(text);
 
+    bool scroll = (verticalScrollBar()->value() >= verticalScrollBar()->maximum() - 4);
     verticalScrollBar()->setRange(0, _layout->lineCount() * _ch + yMargin * 2 - viewport()->size().height());
-    verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    if (scroll)
+    {
+        verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    }
 
     setUpdatesEnabled(true);
     update();
