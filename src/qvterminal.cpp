@@ -168,7 +168,7 @@ void QVTerminal::appendData(const QByteArray &data)
                             _state = QVTerminal::Text;
                         }
                     }
-                    else if (c >= 'A' || c <= 'D')  // Cursor command
+                    else if (c >= 'A' && c <= 'D')  // Cursor command
                     {
                         switch (c.toLatin1())
                         {
