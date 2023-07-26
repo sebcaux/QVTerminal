@@ -4,14 +4,21 @@
 #include <QAbstractScrollArea>
 #include <QAction>
 #include <QTimer>
+#include <QtMath>
 
 #include <vt/vt.h>
 
 #include "qvtlayout.h"
 
+#include <limits.h>
+
 class QVTerminal : public QAbstractScrollArea
 {
     Q_OBJECT
+
+    #define RIGHT_DIRECT    1
+    #define LEFT_DIRECT    -1
+
 public:
     explicit QVTerminal(QWidget *parent = nullptr);
     ~QVTerminal() override;
@@ -45,6 +52,7 @@ protected slots:
     void read();
     void appendData(const QByteArray &data);
     void appendString(const QString &str);
+    void removeStringFromCursor(int direction=RIGHT_DIRECT, int len=INT_MAX);
     void toggleCursor();
 
 private:
@@ -60,6 +68,8 @@ private:
     };
     State _state;
     int _formatValue;
+    int _formatValue_Y;
+    bool use_formaValue_Y = false;
 
     // cursor
     void setCursorPos(int x, int y);
