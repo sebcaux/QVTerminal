@@ -108,6 +108,15 @@ void QVTerminal::appendData(const QByteArray &data)
 
                     setCursorPos(0, _cursorPos.y() + 1);
                 }
+                else if (c == '\b')
+                {
+                    if (_cursorPos.x())
+                    {
+                        appendString(text);
+                        text.clear();
+                        setCursorPos(_cursorPos.x() - 1, _cursorPos.y());
+                    }
+                }
                 else if (c.isPrint())
                 {
                     text.append(c);
@@ -116,6 +125,8 @@ void QVTerminal::appendData(const QByteArray &data)
 
             case QVTerminal::Escape:
                 _formatValue = 0;
+                _formatValue_Y = 0;
+                use_formaValue_Y = false;
                 if (c == '[')
                 {
                     _state = QVTerminal::Format;
@@ -129,10 +140,14 @@ void QVTerminal::appendData(const QByteArray &data)
             case QVTerminal::Format:
                 if (c >= '0' && c <= '9')
                 {
-                    _formatValue = _formatValue * 10 + (c.cell() - '0');
+                    if (use_formaValue_Y)
+                        _formatValue_Y = _formatValue_Y * 10 + (c.cell() - '0');
+                    else
+                        _formatValue = _formatValue * 10 + (c.cell() - '0');
                 }
                 else
                 {
+                    use_formaValue_Y = false;
                     if (c == ';' || c == 'm')  // Format
                     {
                         if (_formatValue == 0)  // reset format
@@ -160,7 +175,9 @@ void QVTerminal::appendData(const QByteArray &data)
 
                         if (c == ';')
                         {
-                            _formatValue = 0;
+                            _formatValue_Y = 0;
+                            use_formaValue_Y = true;
+
                             _state = QVTerminal::Format;
                         }
                         else
@@ -170,14 +187,18 @@ void QVTerminal::appendData(const QByteArray &data)
                     }
                     else if (c >= 'A' && c <= 'D')  // Cursor command
                     {
+                        // move at least one char
+                        if (!_formatValue)
+                            _formatValue++;
+
                         switch (c.toLatin1())
                         {
                             case 'A':  // up
-                                // TODO
+                                setCursorPos(_cursorPos.x(), qMax(_cursorPos.y() - _formatValue, 0));
                                 break;
 
                             case 'B':  // down
-                                // TODO
+                                setCursorPos(_cursorPos.x(), _cursorPos.y() + _formatValue);
                                 break;
 
                             case 'C':  // right
@@ -191,6 +212,47 @@ void QVTerminal::appendData(const QByteArray &data)
                             default:
                                 break;
                         }
+                        _state = QVTerminal::Text;
+                    }
+                    else if (c == 'H')
+                    {
+                        setCursorPos(_formatValue, _formatValue_Y);
+                        _state = QVTerminal::Text;
+                    }
+                    else if (c == 'J')
+                    {
+                        switch (_formatValue)
+                        {
+                            case 0:
+                                clear();
+                                break;
+                            case 1:
+                            case 2:
+                            default:
+                                qDebug() << __FUNCTION__ << "unimplement J function!";
+                                break;
+                        }
+                        _state = QVTerminal::Text;
+                    }
+                    else if (c == 'K')
+                    {
+                        switch (_formatValue)
+                        {
+                            case 0:
+                                removeStringFromCursor(RIGHT_DIRECT);
+                                break;
+                            case 1:
+                            case 2:
+                            default:
+                                qDebug() << __FUNCTION__ << "unimplement K function!";
+                                break;
+                        }
+                        _state = QVTerminal::Text;
+                    }
+                    else if (c == 'P')
+                    {
+                        removeStringFromCursor(LEFT_DIRECT, _formatValue);
+                        removeStringFromCursor(RIGHT_DIRECT);
                         _state = QVTerminal::Text;
                     }
                     else
@@ -284,6 +346,34 @@ void QVTerminal::appendString(const QString &str)
         QVTChar termChar(c, _curentFormat);
         _layout->lineAt(_cursorPos.y()).replace(termChar, _cursorPos.x());
         setCursorPos(_cursorPos.x() + 1, _cursorPos.y());
+    }
+}
+
+void QVTerminal::removeStringFromCursor(int direction, int len)
+{
+    // size limitation
+    int remove_size = 0;
+
+    if (len < 0)
+        len = INT_MAX;
+
+    if (direction > 0)
+        // right direction
+        remove_size = qMin(static_cast<long long>(len), _layout->lineAt(_cursorPos.y()).size() - _cursorPos.x());
+    else
+        // left direction
+        remove_size = qMin(len, _cursorPos.x());
+
+    // remove operation
+    QVTChar termChar('\x7F', _curentFormat);
+    int offset = 0;
+    for (int i = 0; i < remove_size; ++i)
+    {
+        if (direction < 0)
+            offset = -i;
+        else
+            offset = i;
+        _layout->lineAt(_cursorPos.y()).replace(termChar, _cursorPos.x() + offset);
     }
 }
 

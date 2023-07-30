@@ -38,6 +38,7 @@ MainWindow::MainWindow(QWidget *parent) :
     process->start("bash");
 
     setCentralWidget(terminal);
+    this->resize(1024, 768);
 }
 
 MainWindow::~MainWindow()
