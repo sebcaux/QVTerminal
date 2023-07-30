@@ -56,6 +56,7 @@ QVTerminal::QVTerminal(QWidget *parent)
     addAction(_clearAction);
 
     _vt = new VT100(this);
+    _useFormaValue_Y = false;
 
     viewport()->setCursor(QCursor(Qt::IBeamCursor));
 }
@@ -126,7 +127,7 @@ void QVTerminal::appendData(const QByteArray &data)
             case QVTerminal::Escape:
                 _formatValue = 0;
                 _formatValue_Y = 0;
-                use_formaValue_Y = false;
+                _useFormaValue_Y = false;
                 if (c == '[')
                 {
                     _state = QVTerminal::Format;
@@ -140,14 +141,18 @@ void QVTerminal::appendData(const QByteArray &data)
             case QVTerminal::Format:
                 if (c >= '0' && c <= '9')
                 {
-                    if (use_formaValue_Y)
+                    if (_useFormaValue_Y)
+                    {
                         _formatValue_Y = _formatValue_Y * 10 + (c.cell() - '0');
+                    }
                     else
+                    {
                         _formatValue = _formatValue * 10 + (c.cell() - '0');
+                    }
                 }
                 else
                 {
-                    use_formaValue_Y = false;
+                    _useFormaValue_Y = false;
                     if (c == ';' || c == 'm')  // Format
                     {
                         if (_formatValue == 0)  // reset format
@@ -176,7 +181,7 @@ void QVTerminal::appendData(const QByteArray &data)
                         if (c == ';')
                         {
                             _formatValue_Y = 0;
-                            use_formaValue_Y = true;
+                            _useFormaValue_Y = true;
 
                             _state = QVTerminal::Format;
                         }
@@ -189,7 +194,9 @@ void QVTerminal::appendData(const QByteArray &data)
                     {
                         // move at least one char
                         if (!_formatValue)
+                        {
                             _formatValue++;
+                        }
 
                         switch (c.toLatin1())
                         {
@@ -226,6 +233,7 @@ void QVTerminal::appendData(const QByteArray &data)
                             case 0:
                                 clear();
                                 break;
+
                             case 1:
                             case 2:
                             default:
@@ -241,6 +249,7 @@ void QVTerminal::appendData(const QByteArray &data)
                             case 0:
                                 removeStringFromCursor(RIGHT_DIRECT);
                                 break;
+
                             case 1:
                             case 2:
                             default:
@@ -349,20 +358,26 @@ void QVTerminal::appendString(const QString &str)
     }
 }
 
-void QVTerminal::removeStringFromCursor(int direction, int len)
+void QVTerminal::removeStringFromCursor(Direction direction, int len)
 {
     // size limitation
     int remove_size = 0;
 
     if (len < 0)
+    {
         len = INT_MAX;
+    }
 
     if (direction > 0)
+    {
         // right direction
         remove_size = qMin(static_cast<long long>(len), _layout->lineAt(_cursorPos.y()).size() - _cursorPos.x());
+    }
     else
+    {
         // left direction
         remove_size = qMin(len, _cursorPos.x());
+    }
 
     // remove operation
     QVTChar termChar('\x7F', _curentFormat);
@@ -370,9 +385,13 @@ void QVTerminal::removeStringFromCursor(int direction, int len)
     for (int i = 0; i < remove_size; ++i)
     {
         if (direction < 0)
+        {
             offset = -i;
+        }
         else
+        {
             offset = i;
+        }
         _layout->lineAt(_cursorPos.y()).replace(termChar, _cursorPos.x() + offset);
     }
 }

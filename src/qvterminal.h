@@ -16,12 +16,15 @@ class QVTerminal : public QAbstractScrollArea
 {
     Q_OBJECT
 
-    #define RIGHT_DIRECT    1
-    #define LEFT_DIRECT    -1
-
 public:
     explicit QVTerminal(QWidget *parent = nullptr);
     ~QVTerminal() override;
+
+    enum Direction
+    {
+        RIGHT_DIRECT = 1,
+        LEFT_DIRECT = -1,
+    };
 
     void setIODevice(QIODevice *device);
 
@@ -52,7 +55,8 @@ protected slots:
     void read();
     void appendData(const QByteArray &data);
     void appendString(const QString &str);
-    void removeStringFromCursor(int direction=RIGHT_DIRECT, int len=INT_MAX);
+    void removeStringFromCursor(Direction direction = RIGHT_DIRECT, int len = INT_MAX);
+
     void toggleCursor();
 
 private:
@@ -69,7 +73,7 @@ private:
     State _state;
     int _formatValue;
     int _formatValue_Y;
-    bool use_formaValue_Y = false;
+    bool _useFormaValue_Y;
 
     // cursor
     void setCursorPos(int x, int y);
