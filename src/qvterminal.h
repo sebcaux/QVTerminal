@@ -6,7 +6,7 @@
 #include <QTimer>
 #include <QtMath>
 
-#include <vt/vt.h>
+#include "vt/vt.h"
 
 #include "qvtlayout.h"
 
