@@ -15,7 +15,7 @@
 #    include <QStringDecoder>
 #endif
 
-#include <vt/vt100.h>
+#include "vt/vt100.h"
 
 static const int xMargin = 3;
 static const int yMargin = 3;
