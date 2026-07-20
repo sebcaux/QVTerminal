@@ -8,6 +8,7 @@
 #include <QPainter>
 #include <QScrollBar>
 #include <QStyleHints>
+#include <QFile>
 
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 #    include <QTextCodec>
@@ -46,6 +47,11 @@ QVTerminal::QVTerminal(QWidget *parent)
 
     _layout = new QVTLayout();
 
+    _copyAction = new QAction("Copy");
+    _copyAction->setShortcut(QKeySequence("Ctrl+C"));
+    connect(_copyAction, &QAction::triggered, this, &QVTerminal::copy);
+    addAction(_copyAction);
+
     _pasteAction = new QAction("Paste");
     _pasteAction->setShortcut(QKeySequence("Ctrl+V"));
     connect(_pasteAction, &QAction::triggered, this, &QVTerminal::paste);
@@ -54,6 +60,11 @@ QVTerminal::QVTerminal(QWidget *parent)
     _clearAction = new QAction("Clear all");
     connect(_clearAction, &QAction::triggered, this, &QVTerminal::clear);
     addAction(_clearAction);
+
+    _selectAllAction = new QAction("Select All");
+    _selectAllAction->setShortcut(QKeySequence("Ctrl+A"));
+    connect(_selectAllAction, &QAction::triggered, this, &QVTerminal::selectAll);
+    addAction(_selectAllAction);
 
     _vt = new VT100(this);
     _useFormaValue_Y = false;
@@ -291,6 +302,23 @@ void QVTerminal::appendData(const QByteArray &data)
     update();
 }
 
+void QVTerminal::copy()
+{
+    if (!_endSelectPos.isNull()){
+        QString buf;
+        for (int l = _startSelectPos.y(); l <= _endSelectPos.y(); l++){
+            const QVTLine curline = _layout->lineAt(l);
+            int fromc = (l == _startSelectPos.y())?_startSelectPos.x():0;
+            int toc = (l == _endSelectPos.y())?_endSelectPos.x()+1:curline.size();
+            for(int c=fromc; c<toc; c++)
+                buf += QString(curline.chars().at(c).c());
+            if(l < _endSelectPos.y())
+                buf += "\n";
+        }
+        QApplication::clipboard()->setText(buf);
+    }
+}
+
 void QVTerminal::paste()
 {
     QByteArray data;
@@ -304,6 +332,34 @@ void QVTerminal::clear()
     _layout->clear();
     setCursorPos(0, 0);
     setUpdatesEnabled(true);
+}
+
+void QVTerminal::selectAll()
+{
+    _startSelectPos=QPoint(0,0);
+    _endSelectPos=QPoint(_cursorPos.x()-1,_cursorPos.y());
+    viewport()->update();
+}
+
+void QVTerminal::save(const QString &filename){
+    QFile file(filename);
+    if(!file.open(QIODevice::WriteOnly | QIODevice::Text))
+        return;
+    QTextStream out(&file);
+    for (int l = 0; l < _layout->lineCount(); l++){
+        out << _layout->lineAt(l).text() << "\n";
+    }
+    file.close();
+}
+
+void QVTerminal::scrolltoBottom(){
+    bool scroll = (verticalScrollBar()->value() >= verticalScrollBar()->maximum() - 4);
+    verticalScrollBar()->setRange(0, _layout->lineCount() * _ch + yMargin * 2 - viewport()->size().height());
+    if (scroll)
+    {
+        verticalScrollBar()->setValue(verticalScrollBar()->maximum());
+    }
+
 }
 
 QColor QVTerminal::vt100color(char c)
@@ -356,6 +412,17 @@ void QVTerminal::appendString(const QString &str)
         _layout->lineAt(_cursorPos.y()).replace(termChar, _cursorPos.x());
         setCursorPos(_cursorPos.x() + 1, _cursorPos.y());
     }
+}
+
+void QVTerminal::appendDisplayStringLine(const QString &str)
+{
+    _layout->appendLine();
+    setCursorPos(0, _cursorPos.y() + 1);
+    appendString(str);
+    _layout->appendLine();
+    setCursorPos(0, _cursorPos.y() + 1);
+
+    scrolltoBottom();
 }
 
 void QVTerminal::removeStringFromCursor(Direction direction, int len)
@@ -648,8 +715,10 @@ void QVTerminal::contextMenuEvent(QContextMenuEvent *event)
 {
     QMenu menu(this);
     _pasteAction->setEnabled(!QApplication::clipboard()->text().isEmpty());
+    menu.addAction(_copyAction);
     menu.addAction(_pasteAction);
     menu.addAction(_clearAction);
+    menu.addAction(_selectAllAction);
     menu.exec(event->globalPos());
 }
 #endif  // QT_NO_CONTEXTMENU

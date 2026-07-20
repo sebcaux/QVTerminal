@@ -47,9 +47,13 @@ signals:
 
 public slots:
     void writeData(const QByteArray &data);
+    void appendDisplayStringLine(const QString &str);
 
+    void copy();
     void paste();
     void clear();
+    void selectAll();
+    void save(const QString &filename);
 
 protected slots:
     void read();
@@ -58,6 +62,8 @@ protected slots:
     void removeStringFromCursor(Direction direction = RIGHT_DIRECT, int len = INT_MAX);
 
     void toggleCursor();
+
+    void scrolltoBottom();
 
 private:
     QIODevice *_device;
@@ -98,8 +104,10 @@ private:
     bool _echo;
     bool _crlf;
 
+    QAction *_copyAction;
     QAction *_pasteAction;
     QAction *_clearAction;
+    QAction *_selectAllAction;
     VT *_vt;
 
     // QWidget interface
